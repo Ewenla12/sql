@@ -1,0 +1,193 @@
+ STUDENT MANAGEMENT API - ENDPOINTS
+
+POST /auth/student/login
+Request: 
+{
+  "student_id": "string", // Matric Number
+  "password": "string"
+}
+Response: 
+{
+  "student": { "student_id": "string", "first_name": "string", "last_name": "string", "department_id": "int", "level": "int" }
+}
+
+POST /auth/admin/login
+Request: 
+{
+  "username": "string",
+  "password": "string"
+}
+Response: 
+{
+  "admin": { "admin_id": "int", "username": "string", "role": "hod|faculty_officer|registrar|super_admin" }
+}
+
+GET /students
+Description: View all students with filters
+Query Params: 
+  department_id?: int
+  faculty_id?: int
+  level?: 100|200|300|400|500
+  admission_year?: int
+  first_name?: string
+  last_name?: string
+  status?: "active"|"graduated"|"suspended"|"withdrawn"|"expelled"|"on_leave"
+  page?: int
+  limit?: int
+Response:
+{
+  "data": [
+    {
+      "student_id": "string",
+      "first_name": "string",
+      "last_name": "string", 
+      "level": "int",
+      "admission_year": "int",
+      "department": { "department_id": "int", "department_name": "string", "department_code": "string" },
+      "faculty": { "faculty_id": "int", "faculty_name": "string" },
+      "status": "string",
+      "cgpa": "decimal",
+      "email": "string"
+    }
+  ],
+  "total": "int",
+  "page": "int"
+}
+
+POST /students
+Description: Add a new student / Admit student
+Request:
+{
+  "student_id": "string", // Matric Number
+  "first_name": "string",
+  "last_name": "string",
+  "date_of_birth": "YYYY-MM-DD",
+  "department_id": "int",
+  "level": "int",
+  "admission_year": "int",
+  "email": "string",
+  "password": "string"
+}
+Response:
+{
+  "student_id": "string",
+  "status": "active",
+  "message": "Student admitted successfully"
+}
+
+PUT /students/{student_id}
+Description: Update student biodata, level, department, status
+Request:
+{
+  "first_name"?: "string",
+  "last_name"?: "string",
+  "department_id"?: "int",
+  "level"?: "int",
+  "email"?: "string",
+  "status"?: "active"|"graduated"|"suspended"|"withdrawn"|"expelled"|"on_leave",
+  "cgpa"?: "decimal"
+}
+Response:
+{
+  "student_id": "string",
+  "message": "Student updated successfully"
+}
+
+DELETE /students/{student_id}
+Description: Delete/withdraw a student
+Response:
+{
+  "message": "Student record deleted"
+}
+
+GET /students/me/courses
+Description: Student views their registered/approved courses for a session
+Auth: Student Token
+Query Params: academic_session?: "2025/2026"
+Response:
+{
+  "student_id": "string",
+  "academic_session": "string",
+  "courses": [
+    { 
+      "course_id": "int", 
+      "course_code": "string", 
+      "course_title": "string", 
+      "course_unit": "int", 
+      "score": "decimal|null",
+      "grade": "string|null"
+    }
+  ]
+}
+
+POST /students/me/courses/register
+Description: Student applies to register courses for a session. Needs admin/HOD approval
+Auth: Student Token
+Request:
+{
+  "academic_session": "string", // "2025/2026"
+  "course_ids": ["int", "int"] // array of course_id
+}
+Response:
+{
+  "registration_ids": ["int"],
+  "status": "pending",
+  "message": "Course registration submitted for approval"
+}
+
+GET /admin/course-registrations
+Description: View all pending course registrations
+Query Params:
+  status?: "pending"|"approved"|"rejected" default=pending
+  department_id?: int // HOD only sees their dept
+  academic_session?: "2025/2026"
+Auth: Admin Token
+Response:
+{
+  "data": [
+    {
+      "registration_id": "int",
+      "academic_session": "string",
+      "student": { "student_id": "string", "first_name": "string", "last_name": "string", "level": "int" },
+      "course": { "course_id": "int", "course_code": "string", "course_title": "string", "course_unit": "int" },
+      "status": "pending",
+      "applied_at": "timestamp"
+    }
+  ]
+}
+
+POST /admin/course-registrations/{registration_id}/approve
+Description: Admin approves and moves course to student_courses
+Auth: Admin Token
+Request: {}
+Response:
+{
+  "registration_id": "int",
+  "status": "approved",
+  "message": "Course registration approved"
+}
+
+POST /admin/course-registrations/{registration_id}/reject
+Description: Admin rejects course registration
+Auth: Admin Token
+Request: 
+{
+  "reason"?: "string"
+}
+Response:
+{
+  "registration_id": "int",
+  "status": "rejected",
+  "message": "Course registration rejected"
+}
+
+GET /faculties
+Response: { "data": [ { "faculty_id": "int", "faculty_name": "string" } ] }
+
+GET /departments
+Query Params: faculty_id?: int
+Response: { "data": [ { "department_id": "int", "department_name": "string", "department_code": "string" } ] }
+
+GET /courses
+Query Params: department_id?: int, level?: int, semester?: "first"|"second"
+Response: { "data": [ { "course_id": "int", "course_code": "string", "course_title": "string", "course_unit": "int", "level": "int" } ] }
