@@ -20,5 +20,5 @@ func Connect(databaseURL string) {
 	}
 
 	DB = pool
-	log.Println("connected to database")
+	log.Println(".....................connected...........................")
 }

@@ -25,7 +25,7 @@ func Load() *Config {
 	}
 
 	if cfg.Port == "" {
-		cfg.Port = "3000"
+		cfg.Port = "8080"
 	}
 
 	return cfg

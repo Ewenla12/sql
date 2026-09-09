@@ -1,108 +1,69 @@
-CREATE TYPE student_status AS ENUM ('active', 'graduated', 'suspended', 'dropped_out', 'expelled');
-CREATE TYPE student_level AS ENUM ('100', '200', '300', '400', '500');
-CREATE TYPE semester AS ENUM ('first', 'second', 'summer');
-CREATE TYPE admin_role AS ENUM ('hod', 'faculty_officer', 'dean', 'registrar', 'super_admin');
-CREATE TYPE application_status AS ENUM ('pending', 'approved', 'rejected');
+TRUNCATE TABLE course_registration, student_courses, lecturers, students, admin, courses, departments, faculties
+RESTART IDENTITY CASCADE;
 
-CREATE TABLE faculties (
-    faculty_id SERIAL PRIMARY KEY,
-    faculty_name VARCHAR(100) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+INSERT INTO faculties (faculty_name) VALUES
+('Faculty of Science'), ('Faculty of Engineering'), ('Faculty of Arts'), ('Faculty of Social Sciences');
 
-CREATE TABLE departments (
-    department_id SERIAL PRIMARY KEY,
-    faculty_id INT NOT NULL,
-    department_name VARCHAR(100) NOT NULL UNIQUE,
-    department_code VARCHAR(10) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+INSERT INTO departments (faculty_id, department_name, department_code) VALUES
+(1, 'Computer Science', 'CSC'), (1, 'Mathematics', 'MTH'), (1, 'Physics', 'PHY'), (1, 'Chemistry', 'CHM'),
+(2, 'Electrical Engineering', 'EEE'), (2, 'Mechanical Engineering', 'MEE'), (2, 'Civil Engineering', 'CVE'),
+(3, 'English Language', 'ENG'), (3, 'History', 'HIS'), (4, 'Economics', 'ECO');
 
-    FOREIGN KEY (faculty_id) REFERENCES faculties(faculty_id)
-);
+INSERT INTO admin (username, email, password_hash, role, department_id) VALUES
+('jane.hod', 'jane.hod@school.edu', '$2a$10$vD6a4jYytFhGO309e6uYp.OJ.Ti72mMx8OOxktK4ccj5NKlQlHiqi', 'hod', 1),
+('super.admin', 'admin@school.edu', '$2a$10$vD6a4jYytFhGO309e6uYp.OJ.Ti72mMx8OOxktK4ccj5NKlQlHiqi', 'super_admin', NULL);
 
-CREATE TABLE courses (
-    course_id SERIAL PRIMARY KEY,
-    department_id INT NOT NULL,  
-    course_code VARCHAR(10) NOT NULL UNIQUE,
-    course_title VARCHAR(100) NOT NULL,
-    credit_units INT NOT NULL DEFAULT 3,
-    level INT NOT NULL DEFAULT 100,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+DO $$
+DECLARE
+    dept RECORD;
+    yr INT;
+    years INT[] := ARRAY[2021, 2022, 2023, 2024];
+    year_count INT;
+    i INT;
+    first_names TEXT[] := ARRAY['John','Mary','Chidi','Aisha','Femi','Blessing','Yusuf','Ngozi','Tunde','Zainab',
+                                  'Emeka','Halima','Kunle','Grace','Ibrahim','Funmi','Segun','Amaka','Bala','Ronke',
+                                  'Dele','Chinwe','Sani','Nkechi','Wale','Rita','Ken','Titi','Musa','Ifeoma',
+                                  'Adamu','Yemisi','Chibuike','Esther','Kola','Maryam','Obinna','Sarah','David','Grace'];
+    last_names TEXT[] := ARRAY['Balogun','Chukwu','Adekunle','Bello','Nwosu','Eze','Ibrahim','Okoro','Obi','Sule',
+                                 'Ade','Udo','Musa','Ojo','Alade','Nnaji','Bakare','Aliyu','Onwu','Etim',
+                                 'Yusuf','Fashola','Ogundipe','Umeh','Abdullahi','Obiora','Adebayo','Nwachukwu','Saro','Bankole',
+                                 'Garba','Anya','Lawal','Ajayi','Okafor','Danjuma','Awolowo','Yakubu','Johnson','Okonkwo'];
+    genders TEXT[] := ARRAY['male', 'female'];
+    statuses TEXT[] := ARRAY['active','active','active','active','active','active','active','active',
+                              'graduated','suspended','dropped_out','expelled'];
+    fname TEXT;
+    lname TEXT;
+    matric TEXT;
+    admission_yr INT;
+    reference_year CONSTANT INT := 2025;
+    yrs_in INT;
+BEGIN
+    FOR dept IN SELECT department_id, department_code FROM departments LOOP
+        FOREACH yr IN ARRAY years LOOP
+            year_count := 10 + floor(random() * 6)::INT;
+            admission_yr := yr;
+            yrs_in := reference_year - admission_yr;
+            yrs_in := LEAST(GREATEST(yrs_in, 1), 4);
 
-    FOREIGN KEY (department_id) REFERENCES departments(department_id)
-);
+            FOR i IN 1..year_count LOOP
+                fname := first_names[1 + floor(random() * array_length(first_names, 1))::INT];
+                lname := last_names[1 + floor(random() * array_length(last_names, 1))::INT];
+                matric := dept.department_code || '/' || admission_yr || '/' || LPAD(i::TEXT, 3, '0');
 
-CREATE TABLE students (
-    id SERIAL PRIMARY KEY,
-    students_id VARCHAR(20) NOT NULL UNIQUE,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    date_of_birth DATE,
-    department_id INT NOT NULL,
-    level student_level NOT NULL DEFAULT '100',
-    status student_status NOT NULL DEFAULT 'active',
-    admission_year INT NOT NULL,
-    gender VARCHAR(10),
-    email VARCHAR(100) UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    cgpa DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (department_id) REFERENCES departments(department_id)
-);
-
-CREATE TABLE student_courses (
-    id SERIAL PRIMARY KEY,
-    student_id VARCHAR(20) NOT NULL,
-    course_id INT NOT NULL,
-    academic_session VARCHAR(10) NOT NULL,
-    score DECIMAL(5, 2),
-    grade VARCHAR(2),
-    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (student_id) REFERENCES students(students_id),
-    FOREIGN KEY (course_id) REFERENCES courses(course_id),
-    UNIQUE (student_id, course_id, academic_session)
-);
-
-CREATE TABLE admin(
-    admin_id SERIAL PRIMARY KEY,
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    role admin_role NOT NULL DEFAULT 'hod',
-    department_id INT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (department_id) REFERENCES departments(department_id)
-);
-
-CREATE TABLE course_registration(
-    registration_id SERIAL PRIMARY KEY,
-    student_id VARCHAR(20) NOT NULL,
-    course_id INT NOT NULL,
-    academic_session VARCHAR(10) NOT NULL,
-    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reviewed_at TIMESTAMP,
-    reviewed_by INT NULL,
-    status application_status NOT NULL DEFAULT 'pending',
-
-    FOREIGN KEY (student_id) REFERENCES students(students_id),
-    FOREIGN KEY (course_id) REFERENCES courses(course_id),
-    FOREIGN KEY (reviewed_by) REFERENCES admin(admin_id),
-    UNIQUE (student_id, course_id, academic_session)
-);
-
-CREATE TABLE lecturers (
-    lecturer_id SERIAL PRIMARY KEY,
-    staff_id VARCHAR(20) NOT NULL UNIQUE,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    department_id INT NOT NULL,
-    email VARCHAR(100) UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (department_id) REFERENCES departments(department_id)
-);
-
+                INSERT INTO students (
+                    students_id, first_name, last_name, department_id, level, status,
+                    admission_year, gender, email, password_hash, cgpa
+                ) VALUES (
+                    matric, fname, lname, dept.department_id,
+                    (yrs_in * 100)::TEXT::student_level,
+                    statuses[1 + floor(random() * array_length(statuses, 1))::INT]::student_status,
+                    admission_yr,
+                    genders[1 + floor(random() * array_length(genders, 1))::INT],
+                    lower(replace(matric, '/', '.')) || '@school.edu',
+                    '$2a$10$vD6a4jYytFhGO309e6uYp.OJ.Ti72mMx8OOxktK4ccj5NKlQlHiqi',
+                    ROUND((random() * 4)::NUMERIC, 2)
+                );
+            END LOOP;
+        END LOOP;
+    END LOOP;
+END $$;

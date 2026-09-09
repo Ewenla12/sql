@@ -71,7 +71,7 @@ func GetMyCoursesHandler(c fiber.Ctx) error {
 // GetCourseRegistrationsHandler handles GET /admin/course-registrations
 func GetCourseRegistrationsHandler(c fiber.Ctx) error {
 	filter := repository.CourseRegistrationFilter{
-		Status:          c.Query("status", "pending"), // defaults to "pending" if not provided
+		Status:          c.Query("status", "pending"),
 		AcademicSession: c.Query("academic_session"),
 	}
 
