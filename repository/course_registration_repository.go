@@ -128,7 +128,7 @@ func ApproveRegistration(ctx context.Context, registrationID int, reviewedByAdmi
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx) // no-op if we already committed
+	defer tx.Rollback(ctx) // no-op if already committed
 
 	var studentID string
 	var courseID int

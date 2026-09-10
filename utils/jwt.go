@@ -10,7 +10,7 @@ import (
 // instead of every function needing the secret passed in as an argument.
 var JWTSecret string
 
-// Claims holds the data we embed inside every JWT we issue.
+// Claims holds the data embed inside every JWT that is issued.
 type Claims struct {
 	Subject string `json:"sub"`
 	Role    string `json:"role"`
