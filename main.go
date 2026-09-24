@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 
 	"sql/config"
 	"sql/database"
@@ -24,5 +25,27 @@ func main() {
 
 	routes.RegisterRoutes(app)
 
-	log.Fatal(app.Listen(":" + cfg.Port))
+	ports := []string{cfg.Port, "8080"}
+	var listener net.Listener
+	var err error
+	var chosenPort string
+
+	for _, port := range ports {
+		if port == "" {
+			continue
+		}
+		listener, err = net.Listen("tcp4", ":"+port)
+		if err == nil {
+			chosenPort = port
+			break
+		}
+		log.Printf("Port %s unavailable: %v", port, err)
+	}
+
+	if listener == nil {
+		log.Fatalf("failed to start server on any fallback port: %v", err)
+	}
+
+	log.Printf("Server listening on http://localhost:%s", chosenPort)
+	log.Fatal(app.Listener(listener))
 }
